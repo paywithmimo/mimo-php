@@ -43,7 +43,6 @@ if (!function_exists('json_decode')) {
  * MIMO API Library for PHP
  *
  * @package   MIMO
- * @author    Bhumi <bhumihs@projectdemo.biz>
  * @copyright Copyright (c) 2012 Mimo Inc. (http://www.mimo.com.ng)
  * @license   http://opensource.org/licenses/MIT MIT
  */
@@ -63,7 +62,7 @@ class MimoRestClient
     /**
      * @var string oauth token
      */
-    private $oauthToken;
+    private $accessToken;
 
     /**
      * @var array oauth authentication scopes
@@ -87,7 +86,7 @@ class MimoRestClient
     private $errorMessage = false;
 
     const API_SERVER = "https://staging.mimo.com.ng/oauth/v2/";
-
+    const USER_API_SERVER = "https://staging.mimo.com.ng/partner/";
     /**
      * Sets the initial state of the client
      * 
@@ -98,17 +97,14 @@ class MimoRestClient
      * @param string $mode 
      * @throws InvalidArgumentException
      */
-    public function __construct($apiKey = false, $apiSecret = false, $redirectUri = false, $permissions = array("authentication", "transactions","request", "useraccountinfo"), $mode = 'live')
+    public function __construct($apiKey = false, $apiSecret = false, $redirectUri = false)
     {
         $this->apiKey = $apiKey;
         $this->apiSecret = $apiSecret;
         $this->redirectUri = $redirectUri;
-        $this->permissions = $permissions;
         $this->apiServerUrl = self::API_SERVER;
-        $this->setMode($mode);
-        
+        $this->apiServerUrlUser=self::USER_API_SERVER;
     }
-
     /**
      * Get oauth authenitcation URL
      * 
@@ -116,6 +112,7 @@ class MimoRestClient
      */
     public function getAuthUrl()
     {
+    	
         $params = array(
             'client_id' => $this->apiKey,
         	'url' => $this->redirectUri,
@@ -125,11 +122,9 @@ class MimoRestClient
         if ($this->redirectUri) {
             $params['redirect_uri'] = $this->redirectUri;
         }
-
-        $url = API_SERVER.'/authenticate?' . http_build_query($params);	
+        $url =  $this->apiServerUrl.'/authenticate?' . http_build_query($params);	
         return $url;
     }
-
     /**
      * Request oauth token from Mimo
      * 
@@ -149,7 +144,7 @@ class MimoRestClient
             'grant_type' => 'authorization_code',
             'code' => $code
         );
-        $url = API_SERVER.'token?' . http_build_query($params);
+        $url =  $this->apiServerUrl.'token?' . http_build_query($params);
         $response = $this->curl($url, 'POST');
       
         if (isset($response['error'])) {
@@ -162,24 +157,50 @@ class MimoRestClient
 
     /**
      * Grabs the basic account information for
-     * the provided Mimo account Id
+     * the provided Mimo user search parameter
      * 
-     * @param string $userId Mimo Account Id
-     * @return array Basic account information 
+     * @param string $user Mimo Account Field like username, email, phone, account_number
+     * @param string $datastring Mimo Account value of username, email, phone, account_number you wanted to get searched.
+     * @return array Basic user information 
      */
-    public function getUser($user,$string)
+    
+    public function getUser($user,$datastring,$access_token)
     {
         $params = array(
-            'client_id' => $this->apiKey,
-            'client_secret' => $this->apiSecret
+            $user => $datastring
         );
-        $url = 'https://staging.mimo.com.ng/oauth/v2/token?' . http_build_query($params);
-        $response = $this->get("", $params);
-        $user = $this->parse($response);
-
-        return $user;
+        $url = $this->apiServerUrlUser.'user/card_id';
+        $response = $this->get($url, $params,true);
+        if (isset($response['error'])) {
+        	$this->errorMessage = $response['error_description'];
+        	return false;
+        }
+       return $response;
     }
-   
+    /**
+     * Grab information for the given transaction ID
+     *
+     * @param float amount to which information is pulled
+     * @return array Transaction information
+     */
+    public function transaction($amount = false,$notes='')
+    {
+    	// Verify required paramteres
+    	if (!$amount) {
+    		return $this->setError('Please enter a transaction ID.');
+    	}
+    	$params = array(
+    			'amount' => $amount,
+    			'notes'=>$notes
+    	);
+    	$url = $this->apiServerUrlUser.'transfers';    	
+    	$response = $this->post($url, $params,true);
+    	if (isset($response['error'])) {
+    		$this->errorMessage = $response['error_description'];
+    		return false;
+    	}
+    	return $response;
+    }
     /**
      * @return string|bool Error message or false if error message does not exist
      */
@@ -208,7 +229,7 @@ class MimoRestClient
      * 
      * @param array $response
      * @return array
-     */
+    */
     protected function parse($response)
     {
         if (!$response['Success']) {
@@ -235,10 +256,8 @@ class MimoRestClient
      */
     protected function post($request, $params = false, $includeToken = true)
     {
-        $url = $this->apiServerUrl . $request . ($includeToken ? "?oauth_token=" . urlencode($this->oauthToken) : "");
-
+        $url =  $request . ($includeToken ? "?access_token=" . urlencode($this->accessToken) : "");
         $rawData = $this->curl($url, 'POST', $params);
-
         return $rawData;
     }
 
@@ -250,14 +269,11 @@ class MimoRestClient
      * @return array|null Array of results or null if json_decode fails in curl()
      */
     protected function get($request, $params = array())
-    {
-        $params['oauth_token'] = $this->oauthToken;
-
+    { 
+        $params['access_token'] = $this->accessToken;        
         $delimiter = (strpos($request, '?') === false) ? '?' : '&';
-        $url = $this->apiServerUrl . $request . $delimiter . http_build_query($params);
-
+        $url =  $request . $delimiter . http_build_query($params);
         $rawData = $this->curl($url, 'GET');
-
         return $rawData;
     }
 
@@ -273,7 +289,6 @@ class MimoRestClient
     {
         // Encode POST data
         $data = json_encode($params);
-
         // Set request headers
         $headers = array('Accept: application/json', 'Content-Type: application/json;charset=UTF-8');
         if ($method == 'POST') {
@@ -298,7 +313,7 @@ class MimoRestClient
         curl_setopt($ch, CURLOPT_CAINFO, $ca . '/cacert.pem'); // Set the location of the CA-bundle
         // Initiate request
         $rawData = curl_exec($ch);
-
+       
         // If HTTP response wasn't 200,
         // log it as an error!
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -322,7 +337,7 @@ class MimoRestClient
      */
     public function setToken($token)
     {
-        $this->oauthToken = $token;
+        $this->accessToken = $token;
     }
 
     /**
@@ -330,33 +345,7 @@ class MimoRestClient
      */
     public function getToken()
     {
-        return $this->oauthToken;
-    }
-
-    /**
-     * Sets client mode.  Appropriate values are 'live' and 'test'
-     * 
-     * @param string $mode
-     * @throws InvalidArgumentException
-     * @return void
-     */
-    public function setMode($mode = 'live')
-    {
-        $mode = strtolower($mode);
-        
-        if ($mode != 'live' && $mode != 'test') {
-            throw new InvalidArgumentException('Appropriate mode values are live or test');
-        }
-
-        $this->mode = $mode;
-    }
-
-    /**
-     * @return string Client mode
-     */
-    public function getMode()
-    {
-        return $this->mode;
+        return $this->accessToken;
     }
 
 }
