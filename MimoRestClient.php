@@ -25,7 +25,6 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * 
  * @package   MIMO
- * @author    Bhumi <bhumihs@projectdemo.biz>
  * @copyright Copyright (c) 2012 Mimo Inc. (http://www.mimo.com.ng)
  * @license   http://opensource.org/licenses/MIT MIT
  * @version   1.2.6
