@@ -65,11 +65,6 @@ class MimoRestClient
     private $accessToken;
 
     /**
-     * @var array oauth authentication scopes
-     */
-    private $permissions;
-
-    /**
      *
      * @var string URL to return the user to after the authentication request
      */
@@ -93,7 +88,6 @@ class MimoRestClient
      * @param string $apiKey
      * @param string $apiSecret
      * @param string $redirectUri
-     * @param array $permissions
      * @param string $mode 
      * @throws InvalidArgumentException
      */
@@ -112,10 +106,9 @@ class MimoRestClient
      */
     public function getAuthUrl()
     {
-    	
         $params = array(
             'client_id' => $this->apiKey,
-        	'url' => $this->redirectUri,
+	        	'url' => $this->redirectUri,
             'response_type' => 'code'
         );
         // Only append a redirectURI if one was explicitly specified
@@ -164,7 +157,7 @@ class MimoRestClient
      * @return array Basic user information 
      */
     
-    public function getUser($user,$datastring,$access_token)
+    public function getUser($user,$datastring)
     {
         $params = array(
             $user => $datastring
@@ -194,7 +187,13 @@ class MimoRestClient
     			'notes'=>$notes
     	);
     	$url = $this->apiServerUrlUser.'transfers';    	
-    	$response = $this->post($url, $params,true);
+
+			
+			$data['access_token'] = $this->accessToken;
+			$data['amount'] = $params['amount'];
+			$data['notes'] = $params['notes'];	
+			
+    	$response = $this->post($url, $data,true);
     	if (isset($response['error'])) {
     		$this->errorMessage = $response['error_description'];
     		return false;
@@ -256,8 +255,10 @@ class MimoRestClient
      */
     protected function post($request, $params = false, $includeToken = true)
     {
-        $url =  $request . ($includeToken ? "?access_token=" . urlencode($this->accessToken) : "");
-        $rawData = $this->curl($url, 'POST', $params);
+				$params['access_token'] = $this->accessToken;        
+        $delimiter = (strpos($request, '?') === false) ? '?' : '&';
+        $url =  $request . $delimiter . http_build_query($params);
+        $rawData = $this->curl($url, 'POST',array());
         return $rawData;
     }
 
@@ -313,7 +314,7 @@ class MimoRestClient
         curl_setopt($ch, CURLOPT_CAINFO, $ca . '/cacert.pem'); // Set the location of the CA-bundle
         // Initiate request
         $rawData = curl_exec($ch);
-       
+				
         // If HTTP response wasn't 200,
         // log it as an error!
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);

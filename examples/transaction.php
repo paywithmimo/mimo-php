@@ -11,9 +11,9 @@ $Mimo = new MimoRestClient();
 // Seed a previously generated access token
 $Mimo->setToken($token);
 
-// To get user account basic information
-$user_info = $Mimo->getUser($userField='username',$datastring='mimo-php');
-if(!$user_info) { $Mimo->getError(); }else{
-	print_r($user_info);
+// Perform Transaction
+$transaction = $Mimo->transaction($amount='500',$note='Mimo Transfer Test');
+if(!$transaction) { $Mimo->getError(); }else{
+	print_r($transaction);
 }
 ?>

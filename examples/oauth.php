@@ -1,13 +1,12 @@
 <?php
 // Include the Mimo REST Client
-require '/lib/MimoRestClient.php';
+include('../lib/MimoRestClient.php');
 
 // Include any required keys
-require '/keys.php';
+include('keys.php');
 
 // Instantiate a new Mimo REST Client
-$Mimo = new MimoRestClient($apiKey, $apiSecret, $redirectUri, $permissions);
-
+$Mimo = new MimoRestClient($apiKey, $apiSecret, $redirectUri);
 /**
  * STEP 1: 
  *   Create an authentication URL
@@ -17,7 +16,6 @@ $Mimo = new MimoRestClient($apiKey, $apiSecret, $redirectUri, $permissions);
 
 if(!isset($_GET['code']) && !isset($_GET['error'])) {
 	$authUrl = $Mimo->getAuthUrl();
-	
 	header("Location: {$authUrl}");
 }
 
@@ -37,9 +35,12 @@ else if(isset($_GET['code'])) {
 	$token = $Mimo->requestToken($code); 
 	if(!$token) { $Mimo->getError(); } // Check for errors
 	else {
-		session_start();
+		if(!isset($_SESSION))
+			session_start();
 		$_SESSION['token'] = $token;
 		// Print the access token
 		echo $_SESSION['token'];
 	} 
 }
+
+?>
