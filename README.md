@@ -45,8 +45,7 @@ Authentication Methods:
 
 Users Methods:
 
-    me()                ==> (array) the user entity associated with the token
-    getUser($user_id)   ==> (array) the user entity for {$user_id}
+    getUser($user_field, $field_data)   ==> (array) Get user details based on search criteria
     
 Transactions Methods:
 
