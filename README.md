@@ -49,7 +49,7 @@ Users Methods:
     
 Transactions Methods:
 
-    transaction($transactionId)                     ==> (array) transaction details
+    transaction($amount, $notes)                     ==> (array) transaction details
 
 Helper Methods:
 
