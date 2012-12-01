@@ -1,55 +1,49 @@
-<html>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <title>Money Transfer : MIMO</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>MIMO - Transaction</title>
 </head>
+
 <body>
-<div>
-   
-    <a href="oauth.php">Home</a>
-    <br>
-    <a href="userinfo.php">User Profile</a> <br>
-<form name="userinfo_form" method="post" action="" >
-    <h1>Money Transfer</h1>
-    <br>
-    note : <input name="txtnote" type="text" id="txtnote">
-    <span id="VldNoteReq" style="display:none;">Please enter Note</span>
-    <br>
-    <br>
-    amount : <input name="txtAmount" type="text" id="txtAmount">
-    <span id="vldAmountReq" style="display:none;">Please enter Amount</span>
-    <br>
-    <br>
-    <input type="submit" name="btnAmount" value="Money Transfer" id="btnAmount">
-    <br>
-    </form>
-    </div>
+<h1>MIMO - Transaction</h1>
+<form method="post">
+	<input type="text" placeholder="Amount" name="amount" />
+  <br />
+  <input type="text" placeholder="notes" name="notes" />
+  <br />
+	<input type="submit" name="do_transaction" />
+</form>
+<br />
+<br />
 <?php
-if(isset($_POST['btnAmount'])){ 
-	$amount=$_POST['txtAmount'];
-	$note=$_POST['txtnote'];
+if($_SERVER['REQUEST_METHOD'] == 'POST')
+{
 	// Include the Mimo REST Client
 	require '../lib/MimoRestClient.php';
-
+	
 	// Include any required keys
 	require 'keys.php';
-
+	
 	// Instantiate a new Mimo REST Client
 	$Mimo = new MimoRestClient();
-
+	
 	// Seed a previously generated access token
 	$Mimo->setToken($token);
-
+	
 	// Perform Transaction
-	$transaction = $Mimo->transaction($amount,$note);
-	if(!$transaction) { $Mimo->getError(); }else{
-		if(empty($transaction['Success'])){
-			echo $transaction['Message'];exit;
-		}else{
-			echo $transaction['Success'];exit;
-		}		
+	$transaction = $Mimo->transaction($amount='100',$note='Mimo Transfer Test 1');
+//	print_r($transaction);
+	if(!$transaction) 
+	{ 
+		$Mimo->getError(); 
 	}
+	else
+	{
+		print_r($transaction['message']);
+	}	
 }
-?>
 
+?>
 </body>
 </html>
