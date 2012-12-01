@@ -31,6 +31,8 @@ if(isset($_GET['error'])) {
 
 else if(isset($_GET['code'])) {
 	$code = $_GET['code'];
+  
+	
 
 	$token = $Mimo->requestToken($code); 
 	if(!$token) { $Mimo->getError(); } // Check for errors
