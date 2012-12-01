@@ -91,13 +91,17 @@ class MimoRestClient
      * @param string $mode 
      * @throws InvalidArgumentException
      */
-    public function __construct($apiKey = false, $apiSecret = false, $redirectUri = false)
+    public function __construct($apiKey = false, $apiSecret = false, $redirectUri = false, $mode ='stage')
     {
         $this->apiKey = $apiKey;
         $this->apiSecret = $apiSecret;
         $this->redirectUri = $redirectUri;
         $this->apiServerUrl = self::API_SERVER;
         $this->apiServerUrlUser=self::USER_API_SERVER;
+				
+				$this->mode = 'stage';
+				if($mode == 'live')
+					$this->mode = $mode;	
     }
     /**
      * Get oauth authenitcation URL
@@ -139,7 +143,6 @@ class MimoRestClient
         );
         $url =  $this->apiServerUrl.'token?' . http_build_query($params);
         $response = $this->curl($url, 'POST');
-      
         if (isset($response['error'])) {
             $this->errorMessage = $response['error_description'];
             return false;
@@ -159,11 +162,12 @@ class MimoRestClient
     
     public function getUser($user,$datastring)
     {
+
         $params = array(
             $user => $datastring
         );
         $url = $this->apiServerUrlUser.'user/card_id';
-        $response = $this->get($url, $params,true);
+				$response = $this->get($url, $params,true);
         if (isset($response['error'])) {
         	$this->errorMessage = $response['error_description'];
         	return false;
@@ -258,6 +262,7 @@ class MimoRestClient
 				$params['access_token'] = $this->accessToken;        
         $delimiter = (strpos($request, '?') === false) ? '?' : '&';
         $url =  $request . $delimiter . http_build_query($params);
+				//die;
         $rawData = $this->curl($url, 'POST',array());
         return $rawData;
     }
@@ -298,6 +303,7 @@ class MimoRestClient
 
         // Set up our CURL request
         $ch = curl_init();
+				//echo $url; die;
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -307,30 +313,38 @@ class MimoRestClient
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+				if($this->mode == 'stage')
         curl_setopt($ch, CURLOPT_USERPWD, "mimo:mimo");
         // Windows require this certificate
-        $ca = dirname(__FILE__);
+        $ca = dirname(__FILE__); 
         curl_setopt($ch, CURLOPT_CAINFO, $ca); // Set the location of the CA-bundle
         curl_setopt($ch, CURLOPT_CAINFO, $ca . '/cacert.pem'); // Set the location of the CA-bundle
         // Initiate request
-        $rawData = curl_exec($ch);
+				$rawData = curl_exec($ch);
+				//print_r($rawData); die;
+        
+				$data = json_decode($rawData, true);
+				
+				$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 				
         // If HTTP response wasn't 200,
         // log it as an error!
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if ($code !== 200) {
-            return array(
+				if(isset($data['error']))
+				{
+					return array(
                 'Success' => false,
-                'Message' => "Request failed. Server responded with: {$code}"
-            );
-        }
+                'Message' => $data['error']
+          );
+				}
+				
 
         // All done with CURL
         curl_close($ch);
+				
 
         // Otherwise, assume we got some
         // sort of a response
-        return json_decode($rawData, true);
+        return $data;
     }
 
     /**
