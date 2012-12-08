@@ -262,7 +262,7 @@ class MimoRestClient
 				$params['access_token'] = $this->accessToken;        
         $delimiter = (strpos($request, '?') === false) ? '?' : '&';
         $url =  $request . $delimiter . http_build_query($params);
-				//die;
+				
         $rawData = $this->curl($url, 'POST',array());
         return $rawData;
     }
@@ -303,7 +303,7 @@ class MimoRestClient
 
         // Set up our CURL request
         $ch = curl_init();
-				//echo $url; die;
+				
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -321,7 +321,7 @@ class MimoRestClient
         curl_setopt($ch, CURLOPT_CAINFO, $ca . '/cacert.pem'); // Set the location of the CA-bundle
         // Initiate request
 				$rawData = curl_exec($ch);
-				//print_r($rawData); die;
+				
         
 				$data = json_decode($rawData, true);
 				
