@@ -33,7 +33,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST')
 	
 	// Perform Transaction
 	$transaction = $Mimo->transaction($amount='100',$note='Mimo Transfer Test 1');
-//	print_r($transaction);
+
 	if(!$transaction) 
 	{ 
 		$Mimo->getError(); 
