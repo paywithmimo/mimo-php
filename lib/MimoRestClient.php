@@ -347,6 +347,40 @@ class MimoRestClient
         return $data;
     }
 
+/**
+     * Refund Money for the given transaction ID
+     *
+     * @param float amount to which information is pulled
+     * @return array Transaction information
+     */
+    public function refund($amount = false,$transaction_id="",$notes='')
+    {
+    	// Verify required paramteres
+    	if (!$amount) {
+    		return $this->setError('Please enter amount.');
+    	}
+    	if (!$transaction_id) {
+    		return $this->setError('Please enter Transaction ID.');
+    	}
+    	$params = array('notes'=>$notes,
+    			'amount' => $amount,
+    			'transaction_id'=>$transaction_id
+    			 
+    	);
+    	$url = $this->apiServerUrlUser.'refunds';
+    	$data['notes'] = $params['notes'];
+    	$data['amount'] = $params['amount'];
+    	$data['transaction_id'] = $params['transaction_id'];
+    	$response = $this->post($url, $data,true);
+    	if (isset($response['error'])) {
+    		$this->errorMessage = $response['error_description'];
+    		return false;
+    	}
+    	return $response;
+    }
+		
+
+
     /**
      * @param string $token oauth token
      */
