@@ -31,8 +31,6 @@ if(isset($_GET['error'])) {
 
 else if(isset($_GET['code'])) {
 	$code = $_GET['code'];
-  
-	
 
 	$token = $Mimo->requestToken($code); 
 	if(!$token) { $Mimo->getError(); } // Check for errors
@@ -40,8 +38,20 @@ else if(isset($_GET['code'])) {
 		if(!isset($_SESSION))
 			session_start();
 		$_SESSION['token'] = $token;
-		// Print the access token
-		echo $_SESSION['token'];
+		?>
+		<div>
+    		<span id="lblAccessCode">Your current Access Code for mimo is : <?php echo $code; ?></span>
+   			<br>
+    		<span id="lblAccessToken">Your current Access Token for mimo is : <?php echo $_SESSION['token']; ?></span>
+   			<br>
+    		<br>
+    		<a href="userinfo.php" id="ancUser">User Profile</a>
+   			<br>
+    		<a href="transaction.php" id="ancMoney">Money Transfer</a>
+    		
+    	</div>
+		
+		<?php 
 	} 
 }
 
