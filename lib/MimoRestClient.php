@@ -91,17 +91,13 @@ class MimoRestClient
      * @param string $mode 
      * @throws InvalidArgumentException
      */
-    public function __construct($apiKey = false, $apiSecret = false, $redirectUri = false, $mode ='stage')
+    public function __construct($apiKey = false, $apiSecret = false, $redirectUri = false)
     {
         $this->apiKey = $apiKey;
         $this->apiSecret = $apiSecret;
         $this->redirectUri = $redirectUri;
         $this->apiServerUrl = self::API_SERVER;
         $this->apiServerUrlUser=self::USER_API_SERVER;
-				
-				$this->mode = 'stage';
-				if($mode == 'live')
-					$this->mode = $mode;	
     }
     /**
      * Get oauth authenitcation URL
@@ -143,6 +139,7 @@ class MimoRestClient
         );
         $url =  $this->apiServerUrl.'token?' . http_build_query($params);
         $response = $this->curl($url, 'POST');
+      
         if (isset($response['error'])) {
             $this->errorMessage = $response['error_description'];
             return false;
@@ -162,12 +159,11 @@ class MimoRestClient
     
     public function getUser($user,$datastring)
     {
-
         $params = array(
             $user => $datastring
         );
         $url = $this->apiServerUrlUser.'user/card_id';
-				$response = $this->get($url, $params,true);
+        $response = $this->get($url, $params,true);
         if (isset($response['error'])) {
         	$this->errorMessage = $response['error_description'];
         	return false;
@@ -186,21 +182,70 @@ class MimoRestClient
     	if (!$amount) {
     		return $this->setError('Please enter a transaction ID.');
     	}
-    	$params = array(
-    			'amount' => $amount,
-    			'notes'=>$notes
+    	$params = array('notes'=>$notes,
+    			'amount' => $amount
+    			
     	);
-    	$url = $this->apiServerUrlUser.'transfers';    	
-
-			
-			$data['access_token'] = $this->accessToken;
-			$data['amount'] = $params['amount'];
-			$data['notes'] = $params['notes'];	
-			
+    	$url = $this->apiServerUrlUser.'transfers';  
+    	$data['notes'] = $params['notes'];
+		$data['amount'] = $params['amount'];
     	$response = $this->post($url, $data,true);
     	if (isset($response['error'])) {
     		$this->errorMessage = $response['error_description'];
     		return false;
+    	}
+    	return $response;
+    }
+    /**
+     * Refund Money for the given transaction ID
+     *
+     * @param float amount to which information is pulled
+     * @return array Transaction information
+     */
+    public function refund($amount = false,$transaction_id="",$notes='')
+    {
+    	// Verify required paramteres
+    	if (!$amount) {
+    		return $this->setError('Please enter amount.');
+    	}
+    	if (!$transaction_id) {
+    		return $this->setError('Please enter Transaction ID.');
+    	}
+    	$params = array('notes'=>$notes,
+    			'amount' => $amount,
+    			'transaction_id'=>$transaction_id
+    			 
+    	);
+    	$url = $this->apiServerUrlUser.'refunds';
+    	$data['notes'] = $params['notes'];
+    	$data['amount'] = $params['amount'];
+    	$data['transaction_id'] = $params['transaction_id'];
+    	$response = $this->post($url, $data,true);
+    	if (isset($response['error'])) {
+    		$this->errorMessage = $response['error_description'];
+    		return false;
+    	}
+    	return $response;
+    }
+    /**
+     * Void the transaction using transaction ID
+     *
+     * @param int transaction is  to which information is pulled
+     * @return string Transaction information
+     */
+    public function void($transaction_id="")
+    {
+    	// Verify required paramteres
+    	if (!$transaction_id) {
+    		return $this->setError('Please enter Transaction ID.');
+    	}
+    	$params = array('transaction_id'=>$transaction_id 	);
+    	$url = $this->apiServerUrlUser.'transfers/void';
+    	$data['transaction_id'] = $params['transaction_id'];    
+    	$response = $this->post($url, $data,true);
+    	if (isset($response['error'])) {
+    			$this->errorMessage = $response['error_description'];
+    			return false;
     	}
     	return $response;
     }
@@ -262,7 +307,7 @@ class MimoRestClient
 				$params['access_token'] = $this->accessToken;        
         $delimiter = (strpos($request, '?') === false) ? '?' : '&';
         $url =  $request . $delimiter . http_build_query($params);
-				
+       // print_r($url);exit;
         $rawData = $this->curl($url, 'POST',array());
         return $rawData;
     }
@@ -296,14 +341,13 @@ class MimoRestClient
         // Encode POST data
         $data = json_encode($params);
         // Set request headers
-        $headers = array('Accept: application/json', 'Content-Type: application/json;charset=UTF-8');
+        $headers = array('Accept: application/json', 'Content-type: application/json;charset=UTF-8');
         if ($method == 'POST') {
             $headers[] = 'Content-Length: ' . strlen($data);
         }
 
         // Set up our CURL request
         $ch = curl_init();
-				
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
         curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
@@ -313,73 +357,32 @@ class MimoRestClient
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         curl_setopt($ch, CURLOPT_HEADER, false);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-				if($this->mode == 'stage')
         curl_setopt($ch, CURLOPT_USERPWD, "mimo:mimo");
         // Windows require this certificate
-        $ca = dirname(__FILE__); 
+        $ca = dirname(__FILE__);
         curl_setopt($ch, CURLOPT_CAINFO, $ca); // Set the location of the CA-bundle
         curl_setopt($ch, CURLOPT_CAINFO, $ca . '/cacert.pem'); // Set the location of the CA-bundle
         // Initiate request
-				$rawData = curl_exec($ch);
-				
-        
-				$data = json_decode($rawData, true);
-				
-				$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $rawData = curl_exec($ch);
 				
         // If HTTP response wasn't 200,
         // log it as an error!
-				if(isset($data['error']))
-				{
-					return array(
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        
+        if ($code !== 200 && $code!=='201' ) {
+            return array(
                 'Success' => false,
-                'Message' => $data['error']
-          );
-				}
-				
+                'Message' => "Request failed. Server responded with: {$code}"
+            );
+        }
 
         // All done with CURL
         curl_close($ch);
-				
 
         // Otherwise, assume we got some
         // sort of a response
-        return $data;
+        return json_decode($rawData, true);
     }
-
-/**
-     * Refund Money for the given transaction ID
-     *
-     * @param float amount to which information is pulled
-     * @return array Transaction information
-     */
-    public function refund($amount = false,$transaction_id="",$notes='')
-    {
-    	// Verify required paramteres
-    	if (!$amount) {
-    		return $this->setError('Please enter amount.');
-    	}
-    	if (!$transaction_id) {
-    		return $this->setError('Please enter Transaction ID.');
-    	}
-    	$params = array('notes'=>$notes,
-    			'amount' => $amount,
-    			'transaction_id'=>$transaction_id
-    			 
-    	);
-    	$url = $this->apiServerUrlUser.'refunds';
-    	$data['notes'] = $params['notes'];
-    	$data['amount'] = $params['amount'];
-    	$data['transaction_id'] = $params['transaction_id'];
-    	$response = $this->post($url, $data,true);
-    	if (isset($response['error'])) {
-    		$this->errorMessage = $response['error_description'];
-    		return false;
-    	}
-    	return $response;
-    }
-		
-
 
     /**
      * @param string $token oauth token
