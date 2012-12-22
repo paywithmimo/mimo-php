@@ -1,6 +1,6 @@
 <html>
 <head>
-  <title>Money Transfer : MIMO</title>
+  <title>Refund : MIMO</title>
 </head>
 <body>
 <div>
@@ -8,6 +8,7 @@
     <a href="oauth.php">Home</a>
     <br>
     <a href="userinfo.php">User Profile</a> <br>
+      <a href="void.php">Cancel Money Transfer</a><br>
 <form name="userinfo_form" method="post" action="" >
     <h1>Money Transfer</h1>
     <br>
@@ -29,7 +30,7 @@
     </div>
 <?php
 if(isset($_POST['btnAmount'])){ 
-  $amount=$_POST['txtAmount'];
+	$amount=$_POST['txtAmount'];
 	$note=$_POST['txtnote'];
 	$txnId=$_POST['txtTxnId'];
 	// Include the Mimo REST Client
