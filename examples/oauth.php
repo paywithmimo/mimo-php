@@ -1,5 +1,5 @@
 <?php
-// Include the Mimo REST Client
+// Include the MiMo REST Client
 include('../lib/MimoRestClient.php');
 
 // Include any required keys
