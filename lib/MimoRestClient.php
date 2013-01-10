@@ -249,6 +249,33 @@ class MimoRestClient
     	}
     	return $response;
     }
+    
+    
+    /**
+     * User registrtion using provided details
+     *
+     * @param post information
+     * @return string registred information or confirmation
+     */
+    public function registration($param="")
+    {
+    	// Verify required paramteres
+    	if (!$param) {
+    		return $this->setError('Please fillup required fields.');
+    	}
+    	$url = $this->apiServerUrlUser.'registration/';
+
+    	  	
+    	$response = $this->post($url, $param,true);
+    	if (isset($response['error'])) {
+    		$this->errorMessage = $response['error_description'];
+    		return false;
+    	}
+    	return $response;
+    }
+    
+    
+    
     /**
      * @return string|bool Error message or false if error message does not exist
      */
