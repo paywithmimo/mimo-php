@@ -109,7 +109,7 @@ class MimoRestClient
         else
         {
         	$this->apiServerUrl = self::STAGE_API_SERVER;
-        	$this->apiServerUrlUser=self::LIVE_USER_API_SERVER;
+        	$this->apiServerUrlUser=self::STAGE_USER_API_SERVER;
         }
     }
     /**
